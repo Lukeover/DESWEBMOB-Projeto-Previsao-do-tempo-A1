@@ -21,6 +21,10 @@ import android.view.MenuItem;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+
 public class MainActivity extends AppCompatActivity {
 
     private LocationManager locationManager;
@@ -30,6 +34,11 @@ public class MainActivity extends AppCompatActivity {
 
     private double latitudeAtual;
     private double longitudeAtual;
+    private List<Double> llat;
+    private List<Double> llon;
+    private int index = 0;
+    private ArrayList<LatLong> locations;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,15 +46,30 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         locationTextView = findViewById(R.id.locationTextView);
         Toolbar toolbar = findViewById(R.id.toolbar);
+        locations = new ArrayList<>();
+        FloatingActionButton fab = findViewById(R.id.fab);
         setSupportActionBar(toolbar);
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         locationListener = new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
+
                 double lat = location.getLatitude();
                 double lon = location.getLongitude();
                 latitudeAtual = lat;
                 longitudeAtual = lon;
+                LatLong localizacao = new LatLong();
+                localizacao.setLatitude(latitudeAtual);
+                localizacao.setLongitude(longitudeAtual);
+                if(index<50){
+                    locations.add(index,localizacao);
+                    index++;
+                }else{
+                    index = 0;
+                    locations.add(index,localizacao);
+                    index++;
+                }
+
                 locationTextView.setText(String.format("Lat: %f, Long: %f", lat,
                         lon));
             }
@@ -60,16 +84,14 @@ public class MainActivity extends AppCompatActivity {
             public void onProviderDisabled(String provider) {
             }
         };
-        FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Uri gmmIntentUri =
-                        Uri.parse(String.format("geo:%f,%f?q=restaurantes",
-                                latitudeAtual, longitudeAtual));
-                Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
-                mapIntent.setPackage("com.google.android.apps.maps");
-                startActivity(mapIntent);
+                Intent intent = new Intent (
+                        MainActivity.this, ListaLocActivity.class);
+                intent.putExtra("locations", locations);
+                startActivity(intent);
+
             }
         });
     }
@@ -106,7 +128,7 @@ public class MainActivity extends AppCompatActivity {
             //a localização é obtida via hardware, intervalo de 0 segundos e 0 metros
             // entre atualizações
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
-                    0, 0, locationListener);
+                    120000, 200, locationListener);
         }else{
                 //permissão ainda não foi nada, solicita ao usuário
                 //quando o usuário responder, o método onRequestPermissionsResult vai ser chamado
@@ -129,7 +151,7 @@ public class MainActivity extends AppCompatActivity {
                         PackageManager.PERMISSION_GRANTED){
 
                     locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
-                            0, 0, locationListener);
+                            120000, 200, locationListener);
                 }
             }
             else{
@@ -139,8 +161,9 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+
     }
-    @Override
+        @Override
     protected void onStop() {
         super.onStop();
         locationManager.removeUpdates(locationListener);
