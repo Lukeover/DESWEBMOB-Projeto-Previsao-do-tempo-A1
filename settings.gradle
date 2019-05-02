@@ -1,1 +1,2 @@
 include ':app'
+rootProject.name = 'DESWEBMOB-Projeto-Previsao-do-tempo-A1'
